@@ -263,33 +263,51 @@ export async function processAudioInBrowser(
         const totalSamples = audioData.length;
         const outputData = new Float32Array(totalSamples);
 
-        // Copy original audio at reduced volume
+        // Copy original audio
         for (let i = 0; i < totalSamples; i++) {
             outputData[i] = audioData[i];
         }
 
-        // Add beats at detected positions
-        beats.slice(16).forEach((beatTime: number, index: number, arr: number[]) => {
+        // Apply ducking and add beats at detected positions
+        const duckingAmount = 0.2; // Duck to 10% volume
+        const attackTime = 0.01; // 5ms attack
+        const releaseTime = 0.15; // 150ms release
+        const attackSamples = Math.floor(attackTime * sampleRate);
+        const releaseSamples = Math.floor(releaseTime * sampleRate);
+
+        beats.forEach((beatTime: number, index: number, arr: number[]) => {
             const samplePosition = Math.floor(beatTime * sampleRate);
             const nextBeat = arr[index + 1] || beatTime + 0.5;
             const halfBeatSeconds = beatTime + Math.abs(nextBeat - beatTime) / 2;
             const halfBeatPosition = Math.floor(halfBeatSeconds * sampleRate);
 
+            // Apply ducking envelope to original audio around the kick
+            const duckStart = Math.max(0, samplePosition - attackSamples);
+            const duckEnd = Math.min(totalSamples, samplePosition + releaseSamples);
+
+            for (let i = duckStart; i < duckEnd; i++) {
+                let duckGain = 1.0;
+
+                if (i < samplePosition) {
+                    // Attack phase - reduce volume as we approach the kick
+                    const progress = (i - duckStart) / attackSamples;
+                    duckGain = 1.0 - (progress * (1.0 - duckingAmount));
+                } else {
+                    // Stay at ducked volume for the entire release period
+                    duckGain = duckingAmount;
+                }
+
+                outputData[i] *= duckGain;
+            }
+
             // Add tick sound on the beat
             for (let i = 0; i < tickSamples.length; i++) {
                 const outputIndex = samplePosition + i;
                 if (outputIndex < totalSamples) {
-                    outputData[outputIndex] += tickSamples[i] * 0.2;
+                    outputData[outputIndex] += tickSamples[i] * 0.5;
                 }
             }
 
-            // // Add tock sound at half beat
-            // for (let i = 0; i < tockSamples.length; i++) {
-            //     const outputIndex = halfBeatPosition + i;
-            //     if (outputIndex < totalSamples) {
-            //         outputData[outputIndex] += tockSamples[i] * 0.4;
-            //     }
-            // }
         });
 
         onProgress?.('FINAL BOSS MODE ACTIVATED... 🎮');

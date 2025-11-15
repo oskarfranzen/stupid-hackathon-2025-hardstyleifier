@@ -126,42 +126,36 @@ export default function Home() {
         <h1>🔥 HARDSTYLE 🔥</h1>
         <p className="subtitle">⚡ UNLEASH THE BASS ⚡</p>
 
-        <form onSubmit={handleProcess} className="upload-form">
-          <div className="file-input-wrapper">
-            <input
-              id="file-input"
-              type="file"
-              accept="audio/*"
-              onChange={handleFileChange}
-              disabled={processing}
-              className="file-input"
-            />
-            <label htmlFor="file-input" className="file-label">
-              {file ? `🎵 ${file.name}` : "🔊 DROP YOUR TRACK HERE 🔊"}
-            </label>
-          </div>
+        {/* Step 1: Upload and Analyze - Only show if no score yet */}
+        {!banificationScore && (
+          <form onSubmit={handleProcess} className="upload-form">
+            <div className="file-input-wrapper">
+              <input
+                id="file-input"
+                type="file"
+                accept="audio/*"
+                onChange={handleFileChange}
+                disabled={processing || analyzing}
+                className="file-input"
+              />
+              <label htmlFor="file-input" className="file-label">
+                {file ? `🎵 ${file.name}` : "🔊 DROP YOUR TRACK HERE 🔊"}
+              </label>
+            </div>
 
-          <button
-            type="button"
-            onClick={handleAnalyze}
-            disabled={!file || analyzing || processing}
-            className="submit-button"
-            style={{ marginTop: "10px" }}
-          >
-            {analyzing ? "🔍 ANALYZING... 🔍" : "🎯 CHECK IF IT BANGS"}
-          </button>
-
-          {banificationScore && banificationScore.score < 65 && (
             <button
-              type="submit"
-              disabled={!file || processing || analyzing}
+              type="button"
+              onClick={handleAnalyze}
+              disabled={!file || analyzing || processing}
               className="submit-button"
+              style={{ marginTop: "10px" }}
             >
-              {processing ? "🔥 IGNITING THE BASS 🔥" : "⚡ MAKE IT HARD ⚡"}
+              {analyzing ? "🔍 ANALYZING... 🔍" : "🎯 CHECK IF IT BANGS"}
             </button>
-          )}
-        </form>
+          </form>
+        )}
 
+        {/* Step 2: Score Display - Shows after analysis */}
         {banificationScore && (
           <div className="score-display">
             <div className="score-header">
@@ -224,6 +218,21 @@ export default function Home() {
           </div>
         )}
 
+        {/* Step 3: Generate Button - Only show if score < 65 and no processed audio yet */}
+        {banificationScore &&
+          banificationScore.score < 65 &&
+          !processedAudio && (
+            <button
+              onClick={handleProcess}
+              disabled={!file || processing}
+              className="submit-button"
+              style={{ marginTop: "20px", width: "100%" }}
+            >
+              {processing ? "🔥 IGNITING THE BASS 🔥" : "⚡ MAKE IT HARD ⚡"}
+            </button>
+          )}
+
+        {/* Step 4: Play Button - Shows after generation */}
         {processedAudio && (
           <div className="playback-controls">
             <button
