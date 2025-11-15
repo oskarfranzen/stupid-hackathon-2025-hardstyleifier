@@ -61,13 +61,13 @@ export class PixooVisualizer {
       await this.client.fillScreen(bgColor.r, bgColor.g, bgColor.b, false);
 
       // 2. BPM Bar (top section, 0-8 lines, horizontal)
-      // Map 0-200 BPM to 0-64 pixels width
-      const bpmWidth = Math.min(Math.floor((metrics.bpm / 200) * 64), 64);
+      // Map 0-200 BPM to 0-63 pixels width
+      const bpmWidth = Math.min(Math.floor((metrics.bpm / 200) * 64), 63);
       if (bpmWidth > 0) {
         await this.client.drawRectangle(
           0,
           0,
-          bpmWidth - 1,
+          bpmWidth,
           7,
           255,
           0,
@@ -77,15 +77,15 @@ export class PixooVisualizer {
       }
 
       // 3. Energy Bar (left section, 8-16 lines, vertical)
-      // Map 0-100 to 0-64 pixels height
+      // Map 0-100 to 0-63 pixels height
       const energyHeight = Math.min(
         Math.floor((metrics.energy / 100) * 64),
-        64,
+        63,
       );
       if (energyHeight > 0) {
         await this.client.drawRectangle(
           0,
-          64 - energyHeight,
+          63 - energyHeight,
           7,
           63,
           0,
@@ -98,12 +98,12 @@ export class PixooVisualizer {
       // 4. Danceability Bar (right section, vertical)
       const danceHeight = Math.min(
         Math.floor((metrics.danceability / 100) * 64),
-        64,
+        63,
       );
       if (danceHeight > 0) {
         await this.client.drawRectangle(
           56,
-          64 - danceHeight,
+          63 - danceHeight,
           63,
           63,
           255,
@@ -116,13 +116,13 @@ export class PixooVisualizer {
       // 5. Spectral Energy (bottom section, horizontal)
       const spectralWidth = Math.min(
         Math.floor((metrics.spectralEnergy / 100) * 64),
-        64,
+        63,
       );
       if (spectralWidth > 0) {
         await this.client.drawRectangle(
           0,
           56,
-          spectralWidth - 1,
+          spectralWidth,
           63,
           255,
           128,
