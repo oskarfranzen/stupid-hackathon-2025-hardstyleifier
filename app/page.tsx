@@ -287,22 +287,13 @@ export default function Home() {
 
         {/* Step 4: Play Button - Shows after generation */}
         {processedAudio && (
-          <div className="playback-controls">
-            <button
-              onClick={handlePlay}
-              className="submit-button"
-              style={{ marginTop: "10px" }}
-            >
-              {isPlaying ? "🛑 KILL IT" : "🚀 BLAST IT"}
-            </button>
-            <button
-              onClick={handleDownload}
-              className="submit-button"
-              style={{ marginTop: "10px", marginLeft: "10px" }}
-            >
-              💾 SAVE THE MADNESS
-            </button>
-          </div>
+          <button
+            onClick={handlePlay}
+            className="submit-button"
+            style={{ marginTop: "20px", width: "100%" }}
+          >
+            {isPlaying ? "🛑 KILL IT" : "🚀 BLAST IT"}
+          </button>
         )}
 
         {message && (
