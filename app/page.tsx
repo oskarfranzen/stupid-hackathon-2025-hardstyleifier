@@ -69,6 +69,11 @@ export default function Home() {
     setBanificationScore(null);
     setMessage("");
 
+    // Start visualizer
+    if (visualizerRef.current) {
+      visualizerRef.current.start();
+    }
+
     try {
       const score = await analyzeBanification(file, (progress) => {
         setMessage(`🔍 ${progress}`);
@@ -76,11 +81,29 @@ export default function Home() {
 
       setBanificationScore(score);
       setMessage(score.message);
+
+      // Update visualizer with final score
+      if (visualizerRef.current) {
+        await visualizerRef.current.updateMetrics({
+          bpm: score.bpm,
+          energy: score.energy,
+          score: score.score,
+          danceability: score.danceability * 100,
+          spectralEnergy: score.spectralEnergy * 100,
+        });
+      }
     } catch (error) {
       setMessage("💥 ANALYSIS FAILED! TRY AGAIN!");
       console.error("Analysis error:", error);
     } finally {
       setAnalyzing(false);
+
+      // Stop visualizer after a delay to show final result
+      setTimeout(() => {
+        if (visualizerRef.current) {
+          visualizerRef.current.stop();
+        }
+      }, 3000);
     }
   };
 
