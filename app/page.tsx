@@ -2,12 +2,20 @@
 
 import { useState } from "react";
 import "./page.css";
-import { processAudioInBrowser, playAudioBuffer } from "./audioProcessor";
+import {
+  processAudioInBrowser,
+  playAudioBuffer,
+  analyzeBanification,
+  BanificationScore,
+} from "./audioProcessor";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [message, setMessage] = useState("");
+  const [banificationScore, setBanificationScore] =
+    useState<BanificationScore | null>(null);
   const [processedAudio, setProcessedAudio] = useState<AudioBuffer | null>(
     null
   );
@@ -22,6 +30,32 @@ export default function Home() {
       setFile(e.target.files[0]);
       setMessage("");
       setProcessedAudio(null);
+      setBanificationScore(null);
+    }
+  };
+
+  const handleAnalyze = async () => {
+    if (!file) {
+      setMessage("YO! DROP A TRACK FIRST! 🎵");
+      return;
+    }
+
+    setAnalyzing(true);
+    setBanificationScore(null);
+    setMessage("");
+
+    try {
+      const score = await analyzeBanification(file, (progress) => {
+        setMessage(`🔍 ${progress}`);
+      });
+
+      setBanificationScore(score);
+      setMessage(score.message);
+    } catch (error) {
+      setMessage("💥 ANALYSIS FAILED! TRY AGAIN!");
+      console.error("Analysis error:", error);
+    } finally {
+      setAnalyzing(false);
     }
   };
 
@@ -108,13 +142,87 @@ export default function Home() {
           </div>
 
           <button
-            type="submit"
-            disabled={!file || processing}
+            type="button"
+            onClick={handleAnalyze}
+            disabled={!file || analyzing || processing}
             className="submit-button"
+            style={{ marginTop: "10px" }}
           >
-            {processing ? "🔥 IGNITING THE BASS 🔥" : "⚡ MAKE IT HARD ⚡"}
+            {analyzing ? "🔍 ANALYZING... 🔍" : "🎯 CHECK IF IT BANGS"}
           </button>
+
+          {banificationScore && banificationScore.score < 65 && (
+            <button
+              type="submit"
+              disabled={!file || processing || analyzing}
+              className="submit-button"
+            >
+              {processing ? "🔥 IGNITING THE BASS 🔥" : "⚡ MAKE IT HARD ⚡"}
+            </button>
+          )}
         </form>
+
+        {banificationScore && (
+          <div className="score-display">
+            <div className="score-header">
+              <h2>BANGER ANALYSIS</h2>
+              <div
+                className={`verdict ${
+                  banificationScore.verdict === "ALREADY A BANGER"
+                    ? "banger"
+                    : "needs-work"
+                }`}
+              >
+                {banificationScore.verdict}
+              </div>
+            </div>
+            <div className="score-bar">
+              <div
+                className="score-fill"
+                style={{
+                  width: `${banificationScore.score}%`,
+                  backgroundColor:
+                    banificationScore.score >= 65 ? "#00ff00" : "#ff0000",
+                }}
+              />
+              <span className="score-text">
+                {banificationScore.score.toFixed(0)}/100
+              </span>
+            </div>
+            <div className="score-details">
+              <div className="detail-item">
+                <span className="detail-label">🎵 BPM:</span>
+                <span className="detail-value">
+                  {banificationScore.bpm.toFixed(0)}
+                </span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">⚡ Energy:</span>
+                <span className="detail-value">
+                  {(banificationScore.energy / 100).toFixed(2)}
+                </span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">💃 Danceability:</span>
+                <span className="detail-value">
+                  {(banificationScore.danceability * 100).toFixed(0)}%
+                </span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">🎛️ Dynamics:</span>
+                <span className="detail-value">
+                  {banificationScore.dynamicComplexity.toFixed(2)}
+                </span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">🔊 Spectral Energy:</span>
+                <span className="detail-value">
+                  {banificationScore.spectralEnergy.toFixed(2)}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {processedAudio && (
           <div className="playback-controls">
