@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./page.css";
 import {
   processAudioInBrowser,
@@ -8,6 +8,8 @@ import {
   analyzeBanification,
   BanificationScore,
 } from "./audioProcessor";
+import { PixooClient } from "./pixoo/client";
+import { PixooVisualizer } from "./pixoo/visualizer";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
@@ -24,6 +26,26 @@ export default function Home() {
     stop: () => void;
     context: AudioContext;
   } | null>(null);
+
+  // Pixoo visualizer setup
+  const visualizerRef = useRef<PixooVisualizer | null>(null);
+  const updateIntervalRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    // Initialize visualizer on mount
+    const pixooClient = new PixooClient();
+    visualizerRef.current = new PixooVisualizer(pixooClient);
+
+    return () => {
+      // Cleanup on unmount
+      if (visualizerRef.current) {
+        visualizerRef.current.stop();
+      }
+      if (updateIntervalRef.current) {
+        clearInterval(updateIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -86,21 +108,57 @@ export default function Home() {
   };
 
   const handlePlay = () => {
-    if (!processedAudio) return;
+    if (!processedAudio || !banificationScore) return;
 
     if (isPlaying && audioControl) {
       // Stop current playback
       audioControl.stop();
       setIsPlaying(false);
       setAudioControl(null);
+
+      // Stop visualizer
+      if (visualizerRef.current) {
+        visualizerRef.current.stop();
+      }
+      if (updateIntervalRef.current) {
+        clearInterval(updateIntervalRef.current);
+        updateIntervalRef.current = null;
+      }
     } else {
       // Start playback
       const control = playAudioBuffer(processedAudio, () => {
         setIsPlaying(false);
         setAudioControl(null);
+
+        // Stop visualizer when playback ends
+        if (visualizerRef.current) {
+          visualizerRef.current.stop();
+        }
+        if (updateIntervalRef.current) {
+          clearInterval(updateIntervalRef.current);
+          updateIntervalRef.current = null;
+        }
       });
       setAudioControl(control);
       setIsPlaying(true);
+
+      // Start visualizer
+      if (visualizerRef.current) {
+        visualizerRef.current.start();
+
+        // Update display at ~15 FPS with current metrics
+        updateIntervalRef.current = window.setInterval(() => {
+          if (visualizerRef.current && banificationScore) {
+            visualizerRef.current.updateMetrics({
+              bpm: banificationScore.bpm,
+              energy: banificationScore.energy,
+              score: banificationScore.score,
+              danceability: banificationScore.danceability * 100,
+              spectralEnergy: banificationScore.spectralEnergy * 100,
+            });
+          }
+        }, 66); // ~15 FPS
+      }
     }
   };
 
@@ -118,6 +176,19 @@ export default function Home() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleTestPixoo = async () => {
+    if (!visualizerRef.current) return;
+
+    setMessage("🎨 TESTING PIXOO DISPLAY...");
+    try {
+      await visualizerRef.current.test();
+      setMessage("✅ PIXOO TEST COMPLETE!");
+    } catch (error) {
+      setMessage("❌ PIXOO CONNECTION FAILED! Is the server running?");
+      console.error("Pixoo test error:", error);
+    }
   };
 
   return (
@@ -196,6 +267,27 @@ export default function Home() {
               </label>
             </div>
 
+          <button
+            type="button"
+            onClick={handleAnalyze}
+            disabled={!file || analyzing || processing}
+            className="submit-button"
+            style={{ marginTop: "10px" }}
+          >
+            {analyzing ? "🔍 ANALYZING... 🔍" : "🎯 CHECK IF IT BANGS"}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleTestPixoo}
+            disabled={processing || analyzing}
+            className="submit-button"
+            style={{ marginTop: "10px", fontSize: "0.8em" }}
+          >
+            🎨 TEST PIXOO DISPLAY
+          </button>
+
+          {banificationScore && banificationScore.score < 65 && (
             <button
               type="button"
               onClick={handleAnalyze}
