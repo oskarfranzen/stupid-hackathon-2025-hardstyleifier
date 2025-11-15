@@ -9,12 +9,20 @@ export async function POST(
 ) {
   try {
     const path = params.path.join('/');
-    const body = await request.text();
     const contentType = request.headers.get('content-type') || 'application/x-www-form-urlencoded';
+
+    let body;
+    if (contentType.includes('multipart/form-data')) {
+      // For multipart/form-data (GIF uploads), pass the FormData directly
+      body = await request.formData();
+    } else {
+      // For regular form data
+      body = await request.text();
+    }
 
     const response = await fetch(`${PIXOO_SERVER}/${path}`, {
       method: 'POST',
-      headers: {
+      headers: contentType.includes('multipart/form-data') ? {} : {
         'Content-Type': contentType,
       },
       body: body,

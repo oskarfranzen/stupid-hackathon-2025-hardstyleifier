@@ -147,6 +147,30 @@ export class PixooClient {
   }
 
   /**
+   * Send a GIF to the display
+   */
+  async sendGif(gifPath: string, speed: number = 100, skipFirstFrame: boolean = false): Promise<void> {
+    try {
+      // Fetch the GIF from public folder
+      const response = await fetch(gifPath);
+      const blob = await response.blob();
+
+      const formData = new FormData();
+      formData.append('gif', blob, 'output.gif');
+      formData.append('speed', speed.toString());
+      formData.append('skip_first_frame', skipFirstFrame.toString());
+
+      await fetch(`${this.baseUrl}/sendGif`, {
+        method: 'POST',
+        body: formData
+      });
+    } catch (error) {
+      console.error('Failed to send GIF:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Test connection by drawing a test rectangle
    */
   async testConnection(): Promise<boolean> {

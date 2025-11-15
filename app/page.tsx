@@ -133,7 +133,7 @@ export default function Home() {
     }
   };
 
-  const handlePlay = () => {
+  const handlePlay = async () => {
     if (!processedAudio) return;
 
     if (isPlaying && audioControl) {
@@ -168,22 +168,9 @@ export default function Home() {
       setAudioControl(control);
       setIsPlaying(true);
 
-      // Start visualizer
-      if (visualizerRef.current) {
-        visualizerRef.current.start();
-
-        // Update display at ~15 FPS with current metrics
-        updateIntervalRef.current = window.setInterval(() => {
-          if (visualizerRef.current && banificationScore) {
-            visualizerRef.current.updateMetrics({
-              bpm: banificationScore.bpm,
-              energy: banificationScore.energy,
-              score: banificationScore.score,
-              danceability: banificationScore.danceability * 100,
-              spectralEnergy: banificationScore.spectralEnergy * 100,
-            });
-          }
-        }, 66); // ~15 FPS
+      // Start beat-synced visualizer with GIF background and random effects
+      if (visualizerRef.current && banificationScore) {
+        await visualizerRef.current.startBeatSync(banificationScore.bpm);
       }
     }
   };
