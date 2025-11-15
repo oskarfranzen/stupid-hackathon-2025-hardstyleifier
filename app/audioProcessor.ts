@@ -1,5 +1,7 @@
 "use client";
 
+import { getEssentiaInstance } from './essentiaInstance';
+
 /**
  * Process an audio file in the browser and add hardstyle beats to it
  * @param audioFile - The input audio file
@@ -12,12 +14,6 @@ export async function processAudioInBrowser(
 ): Promise<AudioBuffer> {
     onProgress?.('WARMING UP THE SYSTEM... 🎛️');
 
-    // Dynamically import essentia.js for browser use
-    //@ts-ignore
-    const EssentiaModule = await import('essentia.js/dist/essentia-wasm.web.js');
-    //@ts-ignore
-    const EssentiaClass = await import('essentia.js/dist/essentia.js-core.es.js');
-
     // Create audio context
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
 
@@ -27,90 +23,89 @@ export async function processAudioInBrowser(
     onProgress?.('LOADING YOUR JAM... 🎵');
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
-    // Initialize Essentia with the WASM backend
+    // Get the shared Essentia instance
     onProgress?.('FIRING UP THE BASS CANNON... 💥');
-    //@ts-ignore
-    const EssentiaWASM = await EssentiaModule.default({
-        locateFile: (file: string) => {
-            // Tell Essentia where to find the WASM file
-            return `/essentia-wasm.web.wasm`;
+    const essentia = await getEssentiaInstance();
+
+    // Get audio data
+    const audioData = audioBuffer.getChannelData(0);
+
+    onProgress?.('SCANNING FOR THE DROP... 🔍');
+
+    // Analyze rhythm and find beat positions
+    const audioVector = essentia.arrayToVector(audioData);
+    const result = essentia.RhythmDescriptors(audioVector);
+    const beats = essentia.vectorToArray(result.beats_position);
+
+    onProgress?.(`LOCKED ${beats.length} BEATS! LOADING KICKS... 🥁`);
+
+    // Load kick sample
+    const tickBuffer = await fetch('/hskick.wav').then(r => r.arrayBuffer()).then(b => audioContext.decodeAudioData(b));
+    const tickSamples = tickBuffer.getChannelData(0);
+
+    onProgress?.('INJECTING THE MADNESS... 💉');
+
+    const sampleRate = audioBuffer.sampleRate;
+    const totalSamples = audioData.length;
+    const outputData = new Float32Array(totalSamples);
+
+    // Copy original audio at full volume
+    for (let i = 0; i < totalSamples; i++) {
+        outputData[i] = audioData[i];
+    }
+
+    // Sidechain parameters
+    const duckAmount = 0.2; // Duck to 20% volume
+    const attackSamples = Math.floor(0.01 * sampleRate); // 10ms attack
+    const releaseSamples = Math.floor(0.15 * sampleRate); // 150ms release
+
+    // Add beats at detected positions with sidechaining
+    beats.forEach((beatTime: number) => {
+        const samplePosition = Math.floor(beatTime * sampleRate);
+
+        // Apply sidechain ducking for the kick
+        const kickDuration = tickSamples.length;
+        const duckDuration = kickDuration + releaseSamples;
+
+        for (let i = 0; i < duckDuration && (samplePosition + i) < totalSamples; i++) {
+            const outputIndex = samplePosition + i;
+            let envelope = 1.0;
+
+            if (i < attackSamples) {
+                // Attack: fade down quickly
+                envelope = 1.0 - ((1.0 - duckAmount) * (i / attackSamples));
+            } else if (i < kickDuration) {
+                // Sustain: keep ducked
+                envelope = duckAmount;
+            } else {
+                // Release: fade back up
+                const releaseProgress = (i - kickDuration) / releaseSamples;
+                envelope = duckAmount + (1.0 - duckAmount) * releaseProgress;
+            }
+
+            outputData[outputIndex] *= envelope;
+        }
+
+        // Add kick sound on the beat
+        for (let i = 0; i < tickSamples.length; i++) {
+            const outputIndex = samplePosition + i;
+            if (outputIndex < totalSamples) {
+                outputData[outputIndex] += tickSamples[i] * 0.6;
+            }
         }
     });
-    //@ts-ignore
-    const essentia = new EssentiaClass.default(EssentiaWASM);
 
-    try {
-        // Get audio data
-        const audioData = audioBuffer.getChannelData(0);
+    onProgress?.('Creating audio buffer...');
 
-        onProgress?.('SCANNING FOR THE DROP... 🔍');
+    // Create new audio buffer with processed data
+    const processedBuffer = audioContext.createBuffer(
+        1,
+        totalSamples,
+        sampleRate
+    );
+    processedBuffer.copyToChannel(outputData, 0);
 
-        // Analyze rhythm and find beat positions
-        const audioVector = essentia.arrayToVector(audioData);
-        const result = essentia.RhythmDescriptors(audioVector);
-        const beats = essentia.vectorToArray(result.beats_position);
-
-        onProgress?.(`LOCKED ${beats.length} BEATS! LOADING KICKS... 🥁`);
-
-        // Load tick and tock samples
-        const [tickBuffer, tockBuffer] = await Promise.all([
-            fetch('/hskick.wav').then(r => r.arrayBuffer()).then(b => audioContext.decodeAudioData(b)),
-            fetch('/tick.wav').then(r => r.arrayBuffer()).then(b => audioContext.decodeAudioData(b))
-        ]);
-
-        const tickSamples = tickBuffer.getChannelData(0);
-        const tockSamples = tockBuffer.getChannelData(0);
-
-        onProgress?.('INJECTING THE MADNESS... 💉');
-
-        const sampleRate = audioBuffer.sampleRate;
-        const totalSamples = audioData.length;
-        const outputData = new Float32Array(totalSamples);
-
-        // Copy original audio at reduced volume
-        for (let i = 0; i < totalSamples; i++) {
-            outputData[i] = audioData[i] * 0.5;
-        }
-
-        // Add beats at detected positions
-        beats.forEach((beatTime: number, index: number, arr: number[]) => {
-            const samplePosition = Math.floor(beatTime * sampleRate);
-            const nextBeat = arr[index + 1] || beatTime + 0.5;
-            const halfBeatSeconds = beatTime + Math.abs(nextBeat - beatTime) / 2;
-            const halfBeatPosition = Math.floor(halfBeatSeconds * sampleRate);
-
-            // Add tick sound on the beat
-            for (let i = 0; i < tickSamples.length; i++) {
-                const outputIndex = samplePosition + i;
-                if (outputIndex < totalSamples) {
-                    outputData[outputIndex] += tickSamples[i] * 0.4;
-                }
-            }
-
-            // Add tock sound at half beat
-            for (let i = 0; i < tockSamples.length; i++) {
-                const outputIndex = halfBeatPosition + i;
-                if (outputIndex < totalSamples) {
-                    outputData[outputIndex] += tockSamples[i] * 0.4;
-                }
-            }
-        });
-
-        onProgress?.('FINAL BOSS MODE ACTIVATED... 🎮');
-
-        // Create new audio buffer with processed data
-        const processedBuffer = audioContext.createBuffer(
-            1,
-            totalSamples,
-            sampleRate
-        );
-        processedBuffer.copyToChannel(outputData, 0);
-
-        return processedBuffer;
-    } finally {
-        essentia.shutdown();
-        essentia.delete();
-    }
+    return processedBuffer;
 }
 
 /**

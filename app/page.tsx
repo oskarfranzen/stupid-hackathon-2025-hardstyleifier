@@ -3,6 +3,7 @@
 import { useState } from "react";
 import "./page.css";
 import { processAudioInBrowser, playAudioBuffer } from "./audioProcessor";
+import Link from "next/link";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
@@ -91,6 +92,10 @@ export default function Home() {
       <div className="card">
         <h1>🔥 HARDSTYLE 🔥</h1>
         <p className="subtitle">⚡ UNLEASH THE BASS ⚡</p>
+
+        <Link href="/brainrot" className="nav-link">
+          → Try Brainrot Generator 🧠
+        </Link>
 
         <form onSubmit={handleProcess} className="upload-form">
           <div className="file-input-wrapper">

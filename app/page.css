@@ -300,3 +300,27 @@ h1 {
   box-shadow: 0 0 25px rgba(255, 0, 0, 0.8), 0 8px 30px rgba(0, 255, 0, 0.6);
   border-color: #ff0000;
 }
+
+.nav-link {
+  display: inline-block;
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  color: #00ff00;
+  text-decoration: none;
+  border: 2px solid #00ff00;
+  border-radius: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+  text-shadow: 0 0 5px #00ff00;
+}
+
+.nav-link:hover {
+  background: linear-gradient(145deg, #0f0f0f, #1a1a1a);
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
+  transform: translateX(5px);
+  color: #00ff00;
+}
