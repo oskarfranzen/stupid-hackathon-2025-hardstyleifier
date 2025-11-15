@@ -122,9 +122,62 @@ export default function Home() {
 
   return (
     <main className="container">
-      <div className="card">
-        <h1>🔥 HARDSTYLE 🔥</h1>
-        <p className="subtitle">⚡ UNLEASH THE BASS ⚡</p>
+      {/* Festival Lasers - behind everything */}
+      {isPlaying && (
+        <>
+          <div className="laser-container">
+            {[...Array(24)].map((_, i) => (
+              <div
+                key={`main-${i}`}
+                className="laser"
+                style={
+                  {
+                    "--angle": `${(i * 360) / 24}deg`,
+                    "--delay": `${i * 0.05}s`,
+                    "--duration": `${0.8 + Math.random() * 0.6}s`,
+                    "--thickness": "3px",
+                  } as React.CSSProperties
+                }
+              />
+            ))}
+          </div>
+          <div className="laser-container laser-container-secondary">
+            {[...Array(16)].map((_, i) => (
+              <div
+                key={`secondary-${i}`}
+                className="laser laser-thin"
+                style={
+                  {
+                    "--angle": `${(i * 360) / 16 + 11.25}deg`,
+                    "--delay": `${i * 0.08}s`,
+                    "--duration": `${1 + Math.random() * 0.5}s`,
+                    "--thickness": "2px",
+                  } as React.CSSProperties
+                }
+              />
+            ))}
+          </div>
+          <div className="laser-container laser-container-rotating">
+            {[...Array(8)].map((_, i) => (
+              <div
+                key={`rotating-${i}`}
+                className="laser laser-sweep"
+                style={
+                  {
+                    "--angle": `${(i * 360) / 8}deg`,
+                    "--delay": `${i * 0.15}s`,
+                    "--duration": `${1.2 + Math.random() * 0.4}s`,
+                    "--thickness": "4px",
+                  } as React.CSSProperties
+                }
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      <div className={`card ${isPlaying ? "playing" : ""}`}>
+        <h1 className="subtitle">⚡ UNLEASH THE BASS ⚡</h1>
 
         {/* Step 1: Upload and Analyze - Only show if no score yet */}
         {!banificationScore && (

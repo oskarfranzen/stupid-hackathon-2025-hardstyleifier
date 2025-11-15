@@ -270,8 +270,8 @@ export async function processAudioInBrowser(
 
         // Apply ducking and add beats at detected positions
         const duckingAmount = 0.2; // Duck to 10% volume
-        const attackTime = 0.01; // 5ms attack
-        const releaseTime = 0.15; // 150ms release
+        const attackTime = 0.005; // 5ms attack
+        const releaseTime = 0.10; // 150ms release
         const attackSamples = Math.floor(attackTime * sampleRate);
         const releaseSamples = Math.floor(releaseTime * sampleRate);
 
