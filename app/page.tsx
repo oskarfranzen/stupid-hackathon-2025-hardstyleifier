@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./page.css";
 import {
-  processAudioInBrowser,
-  playAudioBuffer,
   analyzeBanification,
   BanificationScore,
+  playAudioBuffer,
+  processAudioInBrowser,
 } from "./audioProcessor";
 import { PixooClient } from "./pixoo/client";
 import { PixooVisualizer } from "./pixoo/visualizer";
@@ -16,16 +16,19 @@ export default function Home() {
   const [processing, setProcessing] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [message, setMessage] = useState("");
-  const [banificationScore, setBanificationScore] =
-    useState<BanificationScore | null>(null);
+  const [banificationScore, setBanificationScore] = useState<
+    BanificationScore | null
+  >(null);
   const [processedAudio, setProcessedAudio] = useState<AudioBuffer | null>(
-    null
+    null,
   );
   const [isPlaying, setIsPlaying] = useState(false);
-  const [audioControl, setAudioControl] = useState<{
-    stop: () => void;
-    context: AudioContext;
-  } | null>(null);
+  const [audioControl, setAudioControl] = useState<
+    {
+      stop: () => void;
+      context: AudioContext;
+    } | null
+  >(null);
 
   // Pixoo visualizer setup
   const visualizerRef = useRef<PixooVisualizer | null>(null);
@@ -108,7 +111,7 @@ export default function Home() {
   };
 
   const handlePlay = () => {
-    if (!processedAudio || !banificationScore) return;
+    if (!processedAudio) return;
 
     if (isPlaying && audioControl) {
       // Stop current playback
@@ -267,27 +270,6 @@ export default function Home() {
               </label>
             </div>
 
-          <button
-            type="button"
-            onClick={handleAnalyze}
-            disabled={!file || analyzing || processing}
-            className="submit-button"
-            style={{ marginTop: "10px" }}
-          >
-            {analyzing ? "🔍 ANALYZING... 🔍" : "🎯 CHECK IF IT BANGS"}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleTestPixoo}
-            disabled={processing || analyzing}
-            className="submit-button"
-            style={{ marginTop: "10px", fontSize: "0.8em" }}
-          >
-            🎨 TEST PIXOO DISPLAY
-          </button>
-
-          {banificationScore && banificationScore.score < 65 && (
             <button
               type="button"
               onClick={handleAnalyze}
@@ -296,6 +278,16 @@ export default function Home() {
               style={{ marginTop: "10px" }}
             >
               {analyzing ? "🔍 ANALYZING... 🔍" : "🎯 CHECK IF IT BANGS"}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleTestPixoo}
+              disabled={processing || analyzing}
+              className="submit-button"
+              style={{ marginTop: "10px", fontSize: "0.8em" }}
+            >
+              🎨 TEST PIXOO DISPLAY
             </button>
           </form>
         )}
@@ -320,8 +312,9 @@ export default function Home() {
                 className="score-fill"
                 style={{
                   width: `${banificationScore.score}%`,
-                  backgroundColor:
-                    banificationScore.score >= 65 ? "#00ff00" : "#ff0000",
+                  backgroundColor: banificationScore.score >= 65
+                    ? "#00ff00"
+                    : "#ff0000",
                 }}
               />
               <span className="score-text">
@@ -367,15 +360,15 @@ export default function Home() {
         {banificationScore &&
           banificationScore.score < 65 &&
           !processedAudio && (
-            <button
-              onClick={handleProcess}
-              disabled={!file || processing}
-              className="submit-button"
-              style={{ marginTop: "20px", width: "100%" }}
-            >
-              {processing ? "🔥 IGNITING THE BASS 🔥" : "⚡ MAKE IT HARD ⚡"}
-            </button>
-          )}
+          <button
+            onClick={handleProcess}
+            disabled={!file || processing}
+            className="submit-button"
+            style={{ marginTop: "20px", width: "100%" }}
+          >
+            {processing ? "🔥 IGNITING THE BASS 🔥" : "⚡ MAKE IT HARD ⚡"}
+          </button>
+        )}
 
         {/* Step 4: Play Button - Shows after generation */}
         {processedAudio && (
