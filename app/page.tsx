@@ -1,29 +1,54 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./page.css";
 import {
-  processAudioInBrowser,
-  playAudioBuffer,
   analyzeBanification,
   BanificationScore,
+  playAudioBuffer,
+  processAudioInBrowser,
 } from "./audioProcessor";
+import { PixooClient } from "./pixoo/client";
+import { PixooVisualizer } from "./pixoo/visualizer";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [message, setMessage] = useState("");
-  const [banificationScore, setBanificationScore] =
-    useState<BanificationScore | null>(null);
+  const [banificationScore, setBanificationScore] = useState<
+    BanificationScore | null
+  >(null);
   const [processedAudio, setProcessedAudio] = useState<AudioBuffer | null>(
-    null
+    null,
   );
   const [isPlaying, setIsPlaying] = useState(false);
-  const [audioControl, setAudioControl] = useState<{
-    stop: () => void;
-    context: AudioContext;
-  } | null>(null);
+  const [audioControl, setAudioControl] = useState<
+    {
+      stop: () => void;
+      context: AudioContext;
+    } | null
+  >(null);
+
+  // Pixoo visualizer setup
+  const visualizerRef = useRef<PixooVisualizer | null>(null);
+  const updateIntervalRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    // Initialize visualizer on mount
+    const pixooClient = new PixooClient();
+    visualizerRef.current = new PixooVisualizer(pixooClient);
+
+    return () => {
+      // Cleanup on unmount
+      if (visualizerRef.current) {
+        visualizerRef.current.stop();
+      }
+      if (updateIntervalRef.current) {
+        clearInterval(updateIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -44,6 +69,11 @@ export default function Home() {
     setBanificationScore(null);
     setMessage("");
 
+    // Start visualizer
+    if (visualizerRef.current) {
+      visualizerRef.current.start();
+    }
+
     try {
       const score = await analyzeBanification(file, (progress) => {
         setMessage(`🔍 ${progress}`);
@@ -51,11 +81,29 @@ export default function Home() {
 
       setBanificationScore(score);
       setMessage(score.message);
+
+      // Update visualizer with final score
+      if (visualizerRef.current) {
+        await visualizerRef.current.updateMetrics({
+          bpm: score.bpm,
+          energy: score.energy,
+          score: score.score,
+          danceability: score.danceability * 100,
+          spectralEnergy: score.spectralEnergy * 100,
+        });
+      }
     } catch (error) {
       setMessage("💥 ANALYSIS FAILED! TRY AGAIN!");
       console.error("Analysis error:", error);
     } finally {
       setAnalyzing(false);
+
+      // Stop visualizer after a delay to show final result
+      setTimeout(() => {
+        if (visualizerRef.current) {
+          visualizerRef.current.stop();
+        }
+      }, 3000);
     }
   };
 
@@ -85,7 +133,7 @@ export default function Home() {
     }
   };
 
-  const handlePlay = () => {
+  const handlePlay = async () => {
     if (!processedAudio) return;
 
     if (isPlaying && audioControl) {
@@ -93,14 +141,37 @@ export default function Home() {
       audioControl.stop();
       setIsPlaying(false);
       setAudioControl(null);
+
+      // Stop visualizer
+      if (visualizerRef.current) {
+        visualizerRef.current.stop();
+      }
+      if (updateIntervalRef.current) {
+        clearInterval(updateIntervalRef.current);
+        updateIntervalRef.current = null;
+      }
     } else {
       // Start playback
       const control = playAudioBuffer(processedAudio, () => {
         setIsPlaying(false);
         setAudioControl(null);
+
+        // Stop visualizer when playback ends
+        if (visualizerRef.current) {
+          visualizerRef.current.stop();
+        }
+        if (updateIntervalRef.current) {
+          clearInterval(updateIntervalRef.current);
+          updateIntervalRef.current = null;
+        }
       });
       setAudioControl(control);
       setIsPlaying(true);
+
+      // Start beat-synced visualizer with GIF background and random effects
+      if (visualizerRef.current && banificationScore) {
+        await visualizerRef.current.startBeatSync(banificationScore.bpm);
+      }
     }
   };
 
@@ -120,6 +191,19 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
 
+  const handleTestPixoo = async () => {
+    if (!visualizerRef.current) return;
+
+    setMessage("🎨 TESTING PIXOO DISPLAY...");
+    try {
+      await visualizerRef.current.test();
+      setMessage("✅ PIXOO TEST COMPLETE!");
+    } catch (error) {
+      setMessage("❌ PIXOO CONNECTION FAILED! Is the server running?");
+      console.error("Pixoo test error:", error);
+    }
+  };
+
   return (
     <main className="container">
       {/* Festival Lasers - behind everything */}
@@ -130,14 +214,12 @@ export default function Home() {
               <div
                 key={`main-${i}`}
                 className="laser"
-                style={
-                  {
-                    "--angle": `${(i * 360) / 24}deg`,
-                    "--delay": `${i * 0.05}s`,
-                    "--duration": `${0.8 + Math.random() * 0.6}s`,
-                    "--thickness": "3px",
-                  } as React.CSSProperties
-                }
+                style={{
+                  "--angle": `${(i * 360) / 24}deg`,
+                  "--delay": `${i * 0.05}s`,
+                  "--duration": `${0.8 + Math.random() * 0.6}s`,
+                  "--thickness": "3px",
+                } as React.CSSProperties}
               />
             ))}
           </div>
@@ -146,14 +228,12 @@ export default function Home() {
               <div
                 key={`secondary-${i}`}
                 className="laser laser-thin"
-                style={
-                  {
-                    "--angle": `${(i * 360) / 16 + 11.25}deg`,
-                    "--delay": `${i * 0.08}s`,
-                    "--duration": `${1 + Math.random() * 0.5}s`,
-                    "--thickness": "2px",
-                  } as React.CSSProperties
-                }
+                style={{
+                  "--angle": `${(i * 360) / 16 + 11.25}deg`,
+                  "--delay": `${i * 0.08}s`,
+                  "--duration": `${1 + Math.random() * 0.5}s`,
+                  "--thickness": "2px",
+                } as React.CSSProperties}
               />
             ))}
           </div>
@@ -162,14 +242,12 @@ export default function Home() {
               <div
                 key={`rotating-${i}`}
                 className="laser laser-sweep"
-                style={
-                  {
-                    "--angle": `${(i * 360) / 8}deg`,
-                    "--delay": `${i * 0.15}s`,
-                    "--duration": `${1.2 + Math.random() * 0.4}s`,
-                    "--thickness": "4px",
-                  } as React.CSSProperties
-                }
+                style={{
+                  "--angle": `${(i * 360) / 8}deg`,
+                  "--delay": `${i * 0.15}s`,
+                  "--duration": `${1.2 + Math.random() * 0.4}s`,
+                  "--thickness": "4px",
+                } as React.CSSProperties}
               />
             ))}
           </div>
@@ -205,6 +283,16 @@ export default function Home() {
             >
               {analyzing ? "🔍 ANALYZING... 🔍" : "🎯 CHECK IF IT BANGS"}
             </button>
+
+            <button
+              type="button"
+              onClick={handleTestPixoo}
+              disabled={processing || analyzing}
+              className="submit-button"
+              style={{ marginTop: "10px", fontSize: "0.8em" }}
+            >
+              🎨 TEST PIXOO DISPLAY
+            </button>
           </form>
         )}
 
@@ -228,8 +316,9 @@ export default function Home() {
                 className="score-fill"
                 style={{
                   width: `${banificationScore.score}%`,
-                  backgroundColor:
-                    banificationScore.score >= 65 ? "#00ff00" : "#ff0000",
+                  backgroundColor: banificationScore.score >= 65
+                    ? "#00ff00"
+                    : "#ff0000",
                 }}
               />
               <span className="score-text">
@@ -273,17 +362,17 @@ export default function Home() {
 
         {/* Step 3: Generate Button - Only show if score < 65 and no processed audio yet */}
         {banificationScore &&
-          banificationScore.score < 65 &&
+          banificationScore.score < 99 &&
           !processedAudio && (
-            <button
-              onClick={handleProcess}
-              disabled={!file || processing}
-              className="submit-button"
-              style={{ marginTop: "20px", width: "100%" }}
-            >
-              {processing ? "🔥 IGNITING THE BASS 🔥" : "⚡ MAKE IT HARD ⚡"}
-            </button>
-          )}
+          <button
+            onClick={handleProcess}
+            disabled={!file || processing}
+            className="submit-button"
+            style={{ marginTop: "20px", width: "100%" }}
+          >
+            {processing ? "🔥 IGNITING THE BASS 🔥" : "⚡ MAKE IT HARD ⚡"}
+          </button>
+        )}
 
         {/* Step 4: Play Button - Shows after generation */}
         {processedAudio && (
