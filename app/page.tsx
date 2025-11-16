@@ -214,14 +214,12 @@ export default function Home() {
               <div
                 key={`main-${i}`}
                 className="laser"
-                style={
-                  {
-                    "--angle": `${(i * 360) / 24}deg`,
-                    "--delay": `${i * 0.05}s`,
-                    "--duration": `${0.8 + Math.random() * 0.6}s`,
-                    "--thickness": "3px",
-                  } as React.CSSProperties
-                }
+                style={{
+                  "--angle": `${(i * 360) / 24}deg`,
+                  "--delay": `${i * 0.05}s`,
+                  "--duration": `${0.8 + Math.random() * 0.6}s`,
+                  "--thickness": "3px",
+                } as React.CSSProperties}
               />
             ))}
           </div>
@@ -230,14 +228,12 @@ export default function Home() {
               <div
                 key={`secondary-${i}`}
                 className="laser laser-thin"
-                style={
-                  {
-                    "--angle": `${(i * 360) / 16 + 11.25}deg`,
-                    "--delay": `${i * 0.08}s`,
-                    "--duration": `${1 + Math.random() * 0.5}s`,
-                    "--thickness": "2px",
-                  } as React.CSSProperties
-                }
+                style={{
+                  "--angle": `${(i * 360) / 16 + 11.25}deg`,
+                  "--delay": `${i * 0.08}s`,
+                  "--duration": `${1 + Math.random() * 0.5}s`,
+                  "--thickness": "2px",
+                } as React.CSSProperties}
               />
             ))}
           </div>
@@ -246,14 +242,12 @@ export default function Home() {
               <div
                 key={`rotating-${i}`}
                 className="laser laser-sweep"
-                style={
-                  {
-                    "--angle": `${(i * 360) / 8}deg`,
-                    "--delay": `${i * 0.15}s`,
-                    "--duration": `${1.2 + Math.random() * 0.4}s`,
-                    "--thickness": "4px",
-                  } as React.CSSProperties
-                }
+                style={{
+                  "--angle": `${(i * 360) / 8}deg`,
+                  "--delay": `${i * 0.15}s`,
+                  "--duration": `${1.2 + Math.random() * 0.4}s`,
+                  "--thickness": "4px",
+                } as React.CSSProperties}
               />
             ))}
           </div>
@@ -368,7 +362,7 @@ export default function Home() {
 
         {/* Step 3: Generate Button - Only show if score < 65 and no processed audio yet */}
         {banificationScore &&
-          banificationScore.score < 65 &&
+          banificationScore.score < 99 &&
           !processedAudio && (
           <button
             onClick={handleProcess}

@@ -207,10 +207,11 @@ export class PixooVisualizer {
 
   /**
    * Draw random visual effects on beat
+   * INTENSE MODE: Multiple shapes per beat for maximum chaos!
    */
   private async drawRandomBeatEffect(): Promise<void> {
     const effects = [
-      // Random colored rectangles
+      // Random colored rectangle
       () => {
         const x = Math.floor(Math.random() * 48);
         const y = Math.floor(Math.random() * 48);
@@ -220,7 +221,7 @@ export class PixooVisualizer {
         const b = Math.floor(Math.random() * 256);
         this.client.drawRectangle(x, y, Math.min(x + size, 63), Math.min(y + size, 63), r, g, b, true);
       },
-      // Random lines
+      // Random line
       () => {
         const x1 = Math.floor(Math.random() * 63);
         const y1 = Math.floor(Math.random() * 63);
@@ -231,21 +232,21 @@ export class PixooVisualizer {
         const b = Math.floor(Math.random() * 256);
         this.client.drawLine(x1, y1, x2, y2, r, g, b, true);
       },
-      // Diagonal stripes
+      // INTENSE: Diagonal stripes - multiple lines
       () => {
         const r = Math.floor(Math.random() * 256);
         const g = Math.floor(Math.random() * 256);
         const b = Math.floor(Math.random() * 256);
-        for (let i = 0; i < 64; i += 8) {
-          this.client.drawLine(i, 0, Math.min(i + 32, 63), 63, r, g, b, false);
+        for (let i = 0; i < 64; i += 6) {
+          this.client.drawLine(i, 0, Math.min(i + 40, 63), 63, r, g, b, false);
         }
         this.client.drawPixel(0, 0, 0, 0, 0, true); // Push
       },
-      // Random pixels spray
+      // INTENSE: Pixel explosion - spray everywhere
       () => {
-        for (let i = 0; i < 20; i++) {
-          const x = Math.floor(Math.random() * 63);
-          const y = Math.floor(Math.random() * 63);
+        for (let i = 0; i < 30; i++) {
+          const x = Math.floor(Math.random() * 64);
+          const y = Math.floor(Math.random() * 64);
           const r = Math.floor(Math.random() * 256);
           const g = Math.floor(Math.random() * 256);
           const b = Math.floor(Math.random() * 256);
@@ -253,7 +254,7 @@ export class PixooVisualizer {
         }
         this.client.drawPixel(0, 0, 0, 0, 0, true); // Push
       },
-      // Corner flash
+      // INTENSE: All four corners flash
       () => {
         const r = Math.floor(Math.random() * 256);
         const g = Math.floor(Math.random() * 256);
@@ -263,21 +264,21 @@ export class PixooVisualizer {
         this.client.drawRectangle(0, 48, 15, 63, r, g, b, false);
         this.client.drawRectangle(48, 48, 63, 63, r, g, b, true);
       },
-      // Border flash
+      // INTENSE: Border flash - entire frame
       () => {
         const r = Math.floor(Math.random() * 256);
         const g = Math.floor(Math.random() * 256);
         const b = Math.floor(Math.random() * 256);
         // Top
-        this.client.drawRectangle(0, 0, 63, 3, r, g, b, false);
+        this.client.drawRectangle(0, 0, 63, 4, r, g, b, false);
         // Bottom
-        this.client.drawRectangle(0, 60, 63, 63, r, g, b, false);
+        this.client.drawRectangle(0, 59, 63, 63, r, g, b, false);
         // Left
-        this.client.drawRectangle(0, 0, 3, 63, r, g, b, false);
+        this.client.drawRectangle(0, 0, 4, 63, r, g, b, false);
         // Right
-        this.client.drawRectangle(60, 0, 63, 63, r, g, b, true);
+        this.client.drawRectangle(59, 0, 63, 63, r, g, b, true);
       },
-      // Crazy crosshair explosion
+      // INTENSE: Crosshair explosion - X marks the spot
       () => {
         const r = Math.floor(Math.random() * 256);
         const g = Math.floor(Math.random() * 256);
@@ -289,6 +290,52 @@ export class PixooVisualizer {
         // Diagonal lines
         this.client.drawLine(0, 0, 63, 63, r, g, b, false);
         this.client.drawLine(63, 0, 0, 63, r, g, b, true);
+      },
+      // INTENSE: Grid explosion
+      () => {
+        const r = Math.floor(Math.random() * 256);
+        const g = Math.floor(Math.random() * 256);
+        const b = Math.floor(Math.random() * 256);
+        // Horizontal lines
+        for (let y = 0; y < 64; y += 16) {
+          this.client.drawLine(0, y, 63, y, r, g, b, false);
+        }
+        // Vertical lines
+        for (let x = 0; x < 64; x += 16) {
+          this.client.drawLine(x, 0, x, 63, r, g, b, false);
+        }
+        this.client.drawPixel(0, 0, 0, 0, 0, true); // Push
+      },
+      // INTENSE: Random rectangles chaos
+      () => {
+        for (let i = 0; i < 5; i++) {
+          const x = Math.floor(Math.random() * 50);
+          const y = Math.floor(Math.random() * 50);
+          const w = Math.floor(Math.random() * 14) + 4;
+          const h = Math.floor(Math.random() * 14) + 4;
+          const r = Math.floor(Math.random() * 256);
+          const g = Math.floor(Math.random() * 256);
+          const b = Math.floor(Math.random() * 256);
+          this.client.drawRectangle(x, y, Math.min(x + w, 63), Math.min(y + h, 63), r, g, b, false);
+        }
+        this.client.drawPixel(0, 0, 0, 0, 0, true); // Push
+      },
+      // INTENSE: Starburst from center
+      () => {
+        const r = Math.floor(Math.random() * 256);
+        const g = Math.floor(Math.random() * 256);
+        const b = Math.floor(Math.random() * 256);
+        const centerX = 32;
+        const centerY = 32;
+        // 8 rays
+        this.client.drawLine(centerX, centerY, 0, 0, r, g, b, false);
+        this.client.drawLine(centerX, centerY, 63, 0, r, g, b, false);
+        this.client.drawLine(centerX, centerY, 0, 63, r, g, b, false);
+        this.client.drawLine(centerX, centerY, 63, 63, r, g, b, false);
+        this.client.drawLine(centerX, centerY, 0, 32, r, g, b, false);
+        this.client.drawLine(centerX, centerY, 63, 32, r, g, b, false);
+        this.client.drawLine(centerX, centerY, 32, 0, r, g, b, false);
+        this.client.drawLine(centerX, centerY, 32, 63, r, g, b, true);
       },
     ];
 
